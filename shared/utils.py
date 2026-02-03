@@ -141,13 +141,14 @@ def fetch_starships_details(starship_urls: List[str], swapi_client) -> List[Dict
     return starships
 
 
-def fetch_characters_details(character_urls: List[str], swapi_client) -> List[Dict]:
+def fetch_characters_details(character_urls: List[str], swapi_client, enrich_homeworld: bool = False) -> List[Dict]:
     """
     Busca detalhes completos dos personagens a partir de uma lista de URLs
 
     Args:
         character_urls: Lista de URLs de personagens da SWAPI
         swapi_client: Instância do SWAPIClient
+        enrich_homeworld: Se True, enriquece o homeworld de cada personagem (padrão: False)
 
     Returns:
         Lista de dicionários com dados dos personagens
@@ -160,6 +161,15 @@ def fetch_characters_details(character_urls: List[str], swapi_client) -> List[Di
             if character_id:
                 character_data = swapi_client.get_person_by_id(character_id)
                 enriched_character = enrich_character_data(character_data)
+
+                # Enriquecer homeworld se solicitado
+                if enrich_homeworld:
+                    homeworld_url = character_data.get('homeworld')
+                    if homeworld_url:
+                        homeworld_details = fetch_homeworld_details(homeworld_url, swapi_client)
+                        if homeworld_details:
+                            enriched_character['homeworld'] = homeworld_details
+
                 characters.append(enriched_character)
         except Exception:
             continue

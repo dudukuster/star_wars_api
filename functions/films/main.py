@@ -89,10 +89,10 @@ def get_films(request: Request):
             params.include_vehicles = True
             params.include_starships = True
 
-        # Incluir detalhes completos dos personagens
+        # Incluir detalhes completos dos personagens (com homeworld enriquecido)
         if params.include_characters:
             character_urls = film.get('characters', [])
-            enriched_film['characters'] = fetch_characters_details(character_urls, client)
+            enriched_film['characters'] = fetch_characters_details(character_urls, client, enrich_homeworld=True)
 
         # Incluir detalhes completos dos planetas
         if params.include_planets:

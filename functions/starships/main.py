@@ -83,10 +83,10 @@ def get_starships(request: Request):
             params.include_pilots = True
             params.include_films = True
 
-        # Incluir detalhes completos dos pilotos
+        # Incluir detalhes completos dos pilotos (com homeworld enriquecido)
         if params.include_pilots:
             pilot_urls = starship.get('pilots', [])
-            enriched_starship['pilots'] = fetch_characters_details(pilot_urls, client)
+            enriched_starship['pilots'] = fetch_characters_details(pilot_urls, client, enrich_homeworld=True)
 
         # Incluir detalhes completos dos filmes
         if params.include_films:
