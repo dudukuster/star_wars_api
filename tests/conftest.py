@@ -15,6 +15,22 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'shared'))
 
 
 @pytest.fixture
+def clear_lru_cache():
+    """Limpa cache LRU entre testes para evitar interferência nos mocks"""
+    yield
+    # Após cada teste, limpa o cache dos métodos decorados com lru_cache
+    try:
+        from swapi_client import SWAPIClient
+        # Limpa cache dos métodos que usam @lru_cache
+        for attr_name in dir(SWAPIClient):
+            attr = getattr(SWAPIClient, attr_name, None)
+            if hasattr(attr, 'cache_clear'):
+                attr.cache_clear()
+    except:
+        pass
+
+
+@pytest.fixture
 def mock_swapi_client():
     """Mock do cliente SWAPI com métodos comuns"""
     client = Mock()

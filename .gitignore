@@ -47,6 +47,7 @@ credentials.json
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
 *.cover
 
 # Environment variables

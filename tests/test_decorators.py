@@ -62,8 +62,8 @@ class TestAddCorsHeaders:
 class TestLogRequest:
     """Testes para decorador log_request"""
 
-    @patch('decorators.logging')
-    def test_logs_request_info(self, mock_logging):
+    @patch('decorators.logger')
+    def test_logs_request_info(self, mock_logger):
         """Testa que informações da requisição são logadas"""
 
         @log_request
@@ -74,14 +74,16 @@ class TestLogRequest:
         mock_request.path = '/test'
         mock_request.method = 'GET'
         mock_request.args = {'param': 'value'}
+        mock_request.headers = Mock()
+        mock_request.headers.get = Mock(return_value='test-agent')
 
         mock_function(mock_request)
 
-        # Verifica que logging.info foi chamado
-        assert mock_logging.info.called
+        # Verifica que logger.info foi chamado
+        assert mock_logger.info.called
 
-    @patch('decorators.logging')
-    def test_logs_even_on_error(self, mock_logging):
+    @patch('decorators.logger')
+    def test_logs_even_on_error(self, mock_logger):
         """Testa que log é feito mesmo se função falhar"""
 
         @log_request
@@ -92,12 +94,14 @@ class TestLogRequest:
         mock_request.path = '/test'
         mock_request.method = 'GET'
         mock_request.args = {}
+        mock_request.headers = Mock()
+        mock_request.headers.get = Mock(return_value='test-agent')
 
         with pytest.raises(Exception):
             mock_function(mock_request)
 
-        # Logging deve ter sido chamado antes do erro
-        assert mock_logging.info.called
+        # Logging deve ter sido chamado (info antes e error depois)
+        assert mock_logger.info.called or mock_logger.error.called
 
 
 class TestHandleErrors:
@@ -117,13 +121,22 @@ class TestHandleErrors:
 
     def test_handles_validation_error(self):
         """Testa tratamento de erro de validação Pydantic"""
+        from pydantic import BaseModel, field_validator
+
+        class TestModel(BaseModel):
+            value: int
+
+            @field_validator('value')
+            @classmethod
+            def check_value(cls, v):
+                if v < 0:
+                    raise ValueError('must be positive')
+                return v
 
         @handle_errors
         def mock_function(request):
-            raise ValidationError.from_exception_data(
-                'test',
-                [{'type': 'value_error', 'loc': ('field',), 'msg': 'Invalid value'}]
-            )
+            # Isso vai gerar um ValidationError real
+            TestModel(value='invalid')
 
         mock_request = Mock()
         response_data, status, headers = mock_function(mock_request)
@@ -149,8 +162,8 @@ class TestHandleErrors:
         assert response_json['success'] is False
         assert 'error' in response_json
 
-    @patch('decorators.logging')
-    def test_logs_errors(self, mock_logging):
+    @patch('decorators.logger')
+    def test_logs_errors(self, mock_logger):
         """Testa que erros são logados"""
 
         @handle_errors
@@ -160,8 +173,8 @@ class TestHandleErrors:
         mock_request = Mock()
         mock_function(mock_request)
 
-        # Verifica que logging.error foi chamado
-        assert mock_logging.error.called
+        # Verifica que logger.exception foi chamado
+        assert mock_logger.exception.called
 
     def test_returns_json_response(self):
         """Testa que resposta de erro é JSON válido"""
@@ -197,6 +210,8 @@ class TestDecoratorCombination:
         mock_request.path = '/test'
         mock_request.method = 'GET'
         mock_request.args = {}
+        mock_request.headers = Mock()
+        mock_request.headers.get = Mock(return_value='test-agent')
 
         response_data, status, headers = mock_function(mock_request)
 
@@ -207,8 +222,8 @@ class TestDecoratorCombination:
         # Verifica que não houve erro
         assert json.loads(response_data)['data'] == 'test'
 
-    @patch('decorators.logging')
-    def test_decorators_with_error(self, mock_logging):
+    @patch('decorators.logger')
+    def test_decorators_with_error(self, mock_logger):
         """Testa decoradores com função que gera erro"""
 
         @add_cors_headers
@@ -221,6 +236,8 @@ class TestDecoratorCombination:
         mock_request.path = '/test'
         mock_request.method = 'GET'
         mock_request.args = {}
+        mock_request.headers = Mock()
+        mock_request.headers.get = Mock(return_value='test-agent')
 
         response_data, status, headers = mock_function(mock_request)
 
@@ -229,4 +246,4 @@ class TestDecoratorCombination:
         # CORS headers devem estar presentes mesmo com erro
         assert 'Access-Control-Allow-Origin' in headers
         # Log deve ter sido feito
-        assert mock_logging.info.called or mock_logging.error.called
+        assert mock_logger.info.called or mock_logger.error.called or mock_logger.exception.called

@@ -436,19 +436,24 @@ def sort_data(
     reverse = (order == "desc")
 
     def get_sort_key(item: Dict) -> Any:
-        """Obtém valor do campo, tratando None"""
+        """Obtém valor do campo, tratando None e conversão numérica"""
         value = item.get(sort_by)
 
         # Tratar valores None
         if value is None:
-            return "" if isinstance(value, str) else 0
+            return float('inf')  # Coloca None no final
 
-        # Tratar episode_id como número
-        if sort_by == "episode_id":
+        # Tentar converter para número se for string numérica
+        if isinstance(value, str):
             try:
-                return int(value)
+                # Tenta converter para int primeiro
+                if '.' not in value:
+                    return int(value)
+                # Senão, tenta float
+                return float(value)
             except (ValueError, TypeError):
-                return 0
+                # Se não for número, retorna string lowercase para comparação
+                return value.lower()
 
         return value
 
