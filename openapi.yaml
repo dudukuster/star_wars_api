@@ -215,7 +215,10 @@ paths:
   /planets:
     get:
       summary: Buscar planetas
-      description: Retorna lista de planetas com suporte a busca, paginação e filtros
+      description: |
+        Retorna lista de planetas com suporte a busca, paginação, filtros e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo do planeta com residentes e filmes.
       operationId: getPlanets
       x-google-backend:
         address: https://get-planets-fint7be5qa-uc.a.run.app
@@ -242,6 +245,24 @@ paths:
           in: query
           description: Filtrar por terreno
           type: string
+          required: false
+        - name: include_residents
+          in: query
+          description: Incluir detalhes completos dos residentes do planeta
+          type: boolean
+          default: false
+          required: false
+        - name: include_films
+          in: query
+          description: Incluir detalhes completos dos filmes onde o planeta aparece
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (residents, films)
+          type: boolean
+          default: false
           required: false
       responses:
         "200":

@@ -174,6 +174,9 @@ class PlanetQueryParams(BaseModel):
         page: Número da página (1-100)
         climate: Filtro por clima
         terrain: Filtro por terreno
+        include_residents: Incluir detalhes dos residentes
+        include_films: Incluir detalhes dos filmes
+        include_all: Incluir todos os detalhes
     """
     search: Optional[str] = Field(
         None,
@@ -195,6 +198,18 @@ class PlanetQueryParams(BaseModel):
         None,
         max_length=50,
         description="Filtro por terreno (ex: desert, grasslands)"
+    )
+    include_residents: Optional[bool] = Field(
+        False,
+        description="Incluir detalhes completos dos residentes do planeta"
+    )
+    include_films: Optional[bool] = Field(
+        False,
+        description="Incluir detalhes completos dos filmes onde o planeta aparece"
+    )
+    include_all: Optional[bool] = Field(
+        False,
+        description="Incluir TODOS os detalhes relacionados (residents, films)"
     )
 
     @field_validator('climate', 'terrain')

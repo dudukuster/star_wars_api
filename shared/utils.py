@@ -193,6 +193,32 @@ def fetch_planets_details(planet_urls: List[str], swapi_client) -> List[Dict]:
     return planets
 
 
+def fetch_films_details(film_urls: List[str], swapi_client) -> List[Dict]:
+    """
+    Busca detalhes completos dos filmes a partir de uma lista de URLs
+
+    Args:
+        film_urls: Lista de URLs de filmes da SWAPI
+        swapi_client: Instância do SWAPIClient
+
+    Returns:
+        Lista de dicionários com dados dos filmes
+    """
+    films = []
+
+    for url in film_urls:
+        try:
+            film_id = swapi_client.extract_id_from_url(url)
+            if film_id:
+                film_data = swapi_client.get_film_by_id(film_id)
+                enriched_film = enrich_film_data(film_data)
+                films.append(enriched_film)
+        except Exception:
+            continue
+
+    return films
+
+
 def truncate_text(text: str, max_length: int = 100) -> str:
     """
     Trunca texto para um tamanho máximo
