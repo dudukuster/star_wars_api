@@ -1,0 +1,111 @@
+# POWER DATA TECNOLOGIA ANALÍTICA LTDA  
+## Processo Seletivo  
+### Desenvolvedor Back End Python Júnior
+
+**De:** Sólides <system@solides.com>  
+**Para:** eduardokuster31@hotmail.com  
+**Data:** 29 de janeiro de 2026  
+
+---
+
+Olá, boa tarde!  
+Espero que esteja bem!
+
+Parabéns por avançar para a segunda etapa do nosso processo seletivo para **Desenvolvedor Back End Python** na **PowerOfData**!
+
+Nesta etapa, queremos convidá-lo a realizar um **case técnico** que avaliará suas habilidades práticas no desenvolvimento de soluções utilizando **Python** e **serviços de nuvem**. Abaixo está o detalhamento do desafio:
+
+---
+
+## CASE TÉCNICO  
+### Avaliação para o Cargo de Desenvolvedor Back End Python
+
+### Contexto
+Venha fazer parte da equipe inovadora da **PowerOfData** e participe da criação de uma plataforma incrível dedicada aos fãs de **Star Wars**!
+
+Queremos que você demonstre suas habilidades de desenvolvedor explorando a **API do Star Wars**, criando funcionalidades que proporcionem uma experiência rica e interativa para os usuários.
+
+---
+
+### Objetivo
+Construir e disponibilizar uma plataforma que ofereça uma experiência envolvente, permitindo que os usuários explorem informações detalhadas sobre:
+
+- Personagens  
+- Planetas  
+- Naves  
+- Filmes da saga  
+
+Para isso, será necessária a criação de uma **API** capaz de capturar as necessidades dos usuários e responder perguntas básicas sobre os dados disponíveis.
+
+---
+
+### Critérios de Aceite
+
+- Utilizar o ambiente **GCP (Google Cloud Platform)** para construção da solução  
+  - Considere os serviços **Cloud Functions** e **API Gateway / Apigee**
+- Utilizar **Python** como linguagem principal do projeto
+- Obter os dados a partir da **API do Star Wars**:  
+  https://swapi.dev/
+- Criar um endpoint que permita ao usuário consultar diferentes informações
+- Permitir interação por meio de **filtros baseados em parâmetros específicos**
+
+---
+
+### Critérios de Avaliação
+
+- Capacidade de entender e aplicar regras de negócio
+- Implementação correta das funcionalidades sugeridas
+- Boas práticas de desenvolvimento
+- Lógica de programação
+- Capacidade de agregar valor com novas ideias e melhorias
+
+---
+
+### Entrega e Avaliação
+
+#### Etapa 1
+- Prazo de **7 dias**, até **11/07**
+- Compartilhar o código em um repositório Git (**GitHub ou similar**)
+- Enviar também a **documentação técnica** do projeto
+
+#### Etapa 2
+- Avaliação da documentação enviada pelo time da PowerOfData  
+- *Etapa eliminatória*
+
+#### Etapa 3
+- Apresentação do projeto (**20 minutos**)  
+- Entrevista com o time da PowerOfData (caso aprovado na etapa 2)
+
+---
+
+### Entregue mais valor com
+
+- Implementação de funcionalidades extras
+- Capacidade de ordenar resultados das consultas
+- Consulta de informações correlacionadas  
+  - Ex: personagens de um filme específico
+- Funcionalidades que demonstrem domínio de dados complexos
+- Inclusão de **testes unitários**
+- Métodos de **autenticação**
+- Apresentação de um **desenho de arquitetura técnica detalhada**
+
+---
+
+## Pronto para a aventura?
+Participe e mostre seu talento! 🚀  
+Qualquer dúvida, estamos à disposição.
+
+---
+
+Atenciosamente,  
+**Recursos Humanos**  
+**PowerOfData**
+
+---
+
+⚠️ **Atenção: Sua segurança é importante!**  
+Nunca solicitamos dados financeiros ou pagamentos para vagas, cursos ou exames admissionais.  
+Caso receba algo suspeito, denuncie em: https://ajuda.solides.com.br
+
+© 2026 Sólides Tecnologia — Todos os direitos reservados.  
+Este é um e-mail automático.
