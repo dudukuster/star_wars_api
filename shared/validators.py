@@ -232,6 +232,9 @@ class StarshipQueryParams(BaseModel):
         page: Número da página (1-100)
         starship_class: Filtro por classe da nave
         manufacturer: Filtro por fabricante
+        include_pilots: Incluir detalhes dos pilotos
+        include_films: Incluir detalhes dos filmes
+        include_all: Incluir todos os detalhes
     """
     search: Optional[str] = Field(
         None,
@@ -253,6 +256,18 @@ class StarshipQueryParams(BaseModel):
         None,
         max_length=100,
         description="Filtro por fabricante"
+    )
+    include_pilots: Optional[bool] = Field(
+        False,
+        description="Incluir detalhes completos dos pilotos da nave"
+    )
+    include_films: Optional[bool] = Field(
+        False,
+        description="Incluir detalhes completos dos filmes onde a nave aparece"
+    )
+    include_all: Optional[bool] = Field(
+        False,
+        description="Incluir TODOS os detalhes relacionados (pilots, films)"
     )
 
     @field_validator('starship_class', 'manufacturer')

@@ -300,7 +300,10 @@ paths:
   /starships:
     get:
       summary: Buscar naves espaciais
-      description: Retorna lista de naves com suporte a busca, paginação e filtros
+      description: |
+        Retorna lista de naves com suporte a busca, paginação, filtros e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo da nave com pilotos e filmes.
       operationId: getStarships
       x-google-backend:
         address: https://get-starships-fint7be5qa-uc.a.run.app
@@ -327,6 +330,24 @@ paths:
           in: query
           description: Filtrar por fabricante
           type: string
+          required: false
+        - name: include_pilots
+          in: query
+          description: Incluir detalhes completos dos pilotos da nave
+          type: boolean
+          default: false
+          required: false
+        - name: include_films
+          in: query
+          description: Incluir detalhes completos dos filmes onde a nave aparece
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (pilots, films)
+          type: boolean
+          default: false
           required: false
       responses:
         "200":
