@@ -49,10 +49,23 @@ def get_starships(request: Request):
         GET /get-starships?manufacturer=kuat
         GET /get-starships?search=falcon&include_all=true  (Recomendado!)
     """
-    # Extrair e validar parâmetros (Pydantic faz conversão e validação automaticamente)
+    # Extrair e validar parâmetros com Pydantic
+    page_str = request.args.get('page')
+    if not page_str:
+        return (
+            json.dumps({
+                'success': False,
+                'error': 'Validation Error',
+                'message': 'O parâmetro "page" é obrigatório',
+                'details': [{'field': 'page', 'message': 'Campo obrigatório'}]
+            }),
+            400,
+            {'Content-Type': 'application/json'}
+        )
+
     params = StarshipQueryParams(
         search=request.args.get('search'),
-        page=request.args.get('page', '1'),  # String, Pydantic converte para int
+        page=int(page_str),
         starship_class=request.args.get('starship_class'),
         manufacturer=request.args.get('manufacturer'),
         include_pilots=request.args.get('include_pilots', 'false').lower() == 'true',
@@ -95,13 +108,19 @@ def get_starships(request: Request):
 
         enriched_starships.append(enriched_starship)
 
-    # Montar resposta
+    # Calcular próxima e anterior página
+    next_page = params.page + 1 if data.get('next') else None
+    previous_page = params.page - 1 if params.page > 1 else None
+
+    # Montar resposta padronizada
     response = {
         'success': True,
         'count': len(enriched_starships),
         'total': data.get('count', 0),
-        'next': data.get('next'),
-        'previous': data.get('previous'),
+        'page': params.page,
+        'page_size': len(enriched_starships),
+        'next': next_page,
+        'previous': previous_page,
         'data': enriched_starships
     }
 

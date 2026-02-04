@@ -56,10 +56,23 @@ def get_characters(request: Request):
         GET /get-characters?search=luke&include_homeworld=true&include_starships=true
         GET /get-characters?search=vader&include_all=true  (Recomendado!)
     """
-    # Extrair e validar parâmetros (Pydantic faz conversão e validação automaticamente)
+    # Extrair e validar parâmetros com Pydantic
+    page_str = request.args.get('page')
+    if not page_str:
+        return (
+            json.dumps({
+                'success': False,
+                'error': 'Validation Error',
+                'message': 'O parâmetro "page" é obrigatório',
+                'details': [{'field': 'page', 'message': 'Campo obrigatório'}]
+            }),
+            400,
+            {'Content-Type': 'application/json'}
+        )
+
     params = CharacterQueryParams(
         search=request.args.get('search'),
-        page=request.args.get('page', '1'),  # String, Pydantic converte para int
+        page=int(page_str),
         gender=request.args.get('gender'),
         include_films=request.args.get('include_films', 'false').lower() == 'true',
         include_homeworld=request.args.get('include_homeworld', 'false').lower() == 'true',
@@ -124,13 +137,19 @@ def get_characters(request: Request):
 
         enriched_characters.append(enriched_char)
 
-    # Montar resposta
+    # Calcular próxima e anterior página
+    next_page = params.page + 1 if data.get('next') else None
+    previous_page = params.page - 1 if params.page > 1 else None
+
+    # Montar resposta padronizada
     response = {
         'success': True,
         'count': len(enriched_characters),
         'total': data.get('count', 0),
-        'next': data.get('next'),
-        'previous': data.get('previous'),
+        'page': params.page,
+        'page_size': len(enriched_characters),
+        'next': next_page,
+        'previous': previous_page,
         'data': enriched_characters
     }
 

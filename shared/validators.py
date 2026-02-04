@@ -115,7 +115,7 @@ class CharacterQueryParams(BaseModel):
 
     Parâmetros:
         search: Termo de busca (max 100 caracteres)
-        page: Número da página (1-100)
+        page: Número da página (1-100) - OBRIGATÓRIO
         gender: Filtro por gênero
         include_films: Incluir detalhes dos filmes
         include_homeworld: Incluir detalhes do planeta de origem
@@ -129,11 +129,11 @@ class CharacterQueryParams(BaseModel):
         max_length=100,
         description="Busca por nome do personagem"
     )
-    page: Optional[int] = Field(
-        1,
+    page: int = Field(
+        ...,
         ge=1,
         le=100,
-        description="Número da página (1-100)"
+        description="Número da página (1-100) - OBRIGATÓRIO"
     )
     gender: Optional[Gender] = Field(
         None,
@@ -178,7 +178,7 @@ class PlanetQueryParams(BaseModel):
 
     Parâmetros:
         search: Termo de busca (max 100 caracteres)
-        page: Número da página (1-100)
+        page: Número da página (1-100) - OBRIGATÓRIO
         climate: Filtro por clima
         terrain: Filtro por terreno
         include_residents: Incluir detalhes dos residentes
@@ -190,11 +190,11 @@ class PlanetQueryParams(BaseModel):
         max_length=100,
         description="Busca por nome do planeta"
     )
-    page: Optional[int] = Field(
-        1,
+    page: int = Field(
+        ...,
         ge=1,
         le=100,
-        description="Número da página (1-100)"
+        description="Número da página (1-100) - OBRIGATÓRIO"
     )
     climate: Optional[str] = Field(
         None,
@@ -236,7 +236,7 @@ class StarshipQueryParams(BaseModel):
 
     Parâmetros:
         search: Termo de busca (max 100 caracteres)
-        page: Número da página (1-100)
+        page: Número da página (1-100) - OBRIGATÓRIO
         starship_class: Filtro por classe da nave
         manufacturer: Filtro por fabricante
         include_pilots: Incluir detalhes dos pilotos
@@ -248,11 +248,11 @@ class StarshipQueryParams(BaseModel):
         max_length=100,
         description="Busca por nome da nave"
     )
-    page: Optional[int] = Field(
-        1,
+    page: int = Field(
+        ...,
         ge=1,
         le=100,
-        description="Número da página (1-100)"
+        description="Número da página (1-100) - OBRIGATÓRIO"
     )
     starship_class: Optional[str] = Field(
         None,

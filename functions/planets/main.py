@@ -50,10 +50,23 @@ def get_planets(request: Request):
         GET /get-planets?terrain=desert
         GET /get-planets?search=tatooine&include_all=true  (Recomendado!)
     """
-    # Extrair e validar parâmetros (Pydantic faz conversão e validação automaticamente)
+    # Extrair e validar parâmetros com Pydantic
+    page_str = request.args.get('page')
+    if not page_str:
+        return (
+            json.dumps({
+                'success': False,
+                'error': 'Validation Error',
+                'message': 'O parâmetro "page" é obrigatório',
+                'details': [{'field': 'page', 'message': 'Campo obrigatório'}]
+            }),
+            400,
+            {'Content-Type': 'application/json'}
+        )
+
     params = PlanetQueryParams(
         search=request.args.get('search'),
-        page=request.args.get('page', '1'),  # String, Pydantic converte para int
+        page=int(page_str),
         climate=request.args.get('climate'),
         terrain=request.args.get('terrain'),
         include_residents=request.args.get('include_residents', 'false').lower() == 'true',
@@ -96,13 +109,19 @@ def get_planets(request: Request):
 
         enriched_planets.append(enriched_planet)
 
-    # Montar resposta
+    # Calcular próxima e anterior página
+    next_page = params.page + 1 if data.get('next') else None
+    previous_page = params.page - 1 if params.page > 1 else None
+
+    # Montar resposta padronizada
     response = {
         'success': True,
         'count': len(enriched_planets),
         'total': data.get('count', 0),
-        'next': data.get('next'),
-        'previous': data.get('previous'),
+        'page': params.page,
+        'page_size': len(enriched_planets),
+        'next': next_page,
+        'previous': previous_page,
         'data': enriched_planets
     }
 
