@@ -1,0 +1,561 @@
+swagger: "2.0"
+info:
+  title: Star Wars API - PowerOfData
+  description: |
+    API RESTful construída em Python que consome a SWAPI (Star Wars API) e disponibiliza
+    endpoints para consulta de informações sobre filmes, personagens, planetas e naves
+    espaciais da saga Star Wars.
+
+    **Desenvolvido por:** Eduardo Kuster | **Email:** eduardokuster31@hotmail.com
+    **Teste Técnico:** Desenvolvedor Back End Python Júnior - PowerOfData
+
+    Recursos: Validação Pydantic, Cache LRU, Retry automático, Logging estruturado, CORS habilitado
+
+    **Autenticação:** Requer API Key no header `x-api-key`
+  version: "1.0.0"
+host: "starwars-api-gateway-4evvcnbe.uc.gateway.dev"
+schemes:
+  - https
+produces:
+  - application/json
+consumes:
+  - application/json
+
+# Configuração de segurança - API Key obrigatória
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+
+# Aplicar segurança globalmente em todos os endpoints
+security:
+  - api_key: []
+
+paths:
+  /films:
+    get:
+      summary: Buscar filmes
+      description: |
+        Retorna lista de filmes da saga Star Wars com suporte a busca, ordenação e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo do filme com personagens, planetas, espécies, veículos e naves.
+      operationId: getFilms
+      x-google-backend:
+        address: https://get-films-fint7be5qa-uc.a.run.app
+      parameters:
+        - name: search
+          in: query
+          description: Termo de busca para filtrar filmes por título
+          type: string
+          required: false
+        - name: sort_by
+          in: query
+          description: Campo para ordenação (title, release_date, episode_id)
+          type: string
+          enum: [title, release_date, episode_id]
+          default: release_date
+          required: false
+        - name: order
+          in: query
+          description: Ordem de ordenação (asc, desc)
+          type: string
+          enum: [asc, desc]
+          default: asc
+          required: false
+        - name: include_characters
+          in: query
+          description: Incluir detalhes completos dos personagens que aparecem no filme
+          type: boolean
+          default: false
+          required: false
+        - name: include_planets
+          in: query
+          description: Incluir detalhes completos dos planetas que aparecem no filme
+          type: boolean
+          default: false
+          required: false
+        - name: include_species
+          in: query
+          description: Incluir detalhes completos das espécies que aparecem no filme
+          type: boolean
+          default: false
+          required: false
+        - name: include_vehicles
+          in: query
+          description: Incluir detalhes completos dos veículos que aparecem no filme
+          type: boolean
+          default: false
+          required: false
+        - name: include_starships
+          in: query
+          description: Incluir detalhes completos das naves que aparecem no filme
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (characters, planets, species, vehicles, starships)
+          type: boolean
+          default: false
+          required: false
+      responses:
+        "200":
+          description: Lista de filmes retornada com sucesso
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              count:
+                type: integer
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Film"
+        "400":
+          description: Erro de validação nos parâmetros
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: "#/definitions/Error"
+        "503":
+          description: SWAPI indisponível
+          schema:
+            $ref: "#/definitions/Error"
+
+  /characters:
+    get:
+      summary: Buscar personagens
+      description: |
+        Retorna lista de personagens com suporte a busca, paginação, filtros e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo do personagem com veículos, naves, filmes, espécies e planetas.
+      operationId: getCharacters
+      x-google-backend:
+        address: https://get-characters-fint7be5qa-uc.a.run.app
+      parameters:
+        - name: search
+          in: query
+          description: Termo de busca para filtrar personagens por nome
+          type: string
+          required: false
+        - name: page
+          in: query
+          description: Número da página (1-100)
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          required: false
+        - name: gender
+          in: query
+          description: Filtrar por gênero
+          type: string
+          enum: [male, female, n/a, hermaphrodite]
+          required: false
+        - name: include_films
+          in: query
+          description: Incluir detalhes completos dos filmes em que o personagem aparece
+          type: boolean
+          default: false
+          required: false
+        - name: include_homeworld
+          in: query
+          description: Incluir detalhes completos do planeta de origem (homeworld)
+          type: boolean
+          default: false
+          required: false
+        - name: include_species
+          in: query
+          description: Incluir detalhes completos das espécies do personagem
+          type: boolean
+          default: false
+          required: false
+        - name: include_vehicles
+          in: query
+          description: Incluir detalhes completos dos veículos pilotados pelo personagem
+          type: boolean
+          default: false
+          required: false
+        - name: include_starships
+          in: query
+          description: Incluir detalhes completos das naves pilotadas pelo personagem
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (films, homeworld, species, vehicles, starships)
+          type: boolean
+          default: false
+          required: false
+      responses:
+        "200":
+          description: Lista de personagens retornada com sucesso
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              count:
+                type: integer
+              total:
+                type: integer
+              next:
+                type: string
+              previous:
+                type: string
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Character"
+        "400":
+          description: Erro de validação
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: Erro interno
+          schema:
+            $ref: "#/definitions/Error"
+        "503":
+          description: SWAPI indisponível
+          schema:
+            $ref: "#/definitions/Error"
+
+  /planets:
+    get:
+      summary: Buscar planetas
+      description: |
+        Retorna lista de planetas com suporte a busca, paginação, filtros e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo do planeta com residentes e filmes.
+      operationId: getPlanets
+      x-google-backend:
+        address: https://get-planets-fint7be5qa-uc.a.run.app
+      parameters:
+        - name: search
+          in: query
+          description: Termo de busca para filtrar planetas por nome
+          type: string
+          required: false
+        - name: page
+          in: query
+          description: Número da página (1-100)
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          required: false
+        - name: climate
+          in: query
+          description: Filtrar por clima
+          type: string
+          required: false
+        - name: terrain
+          in: query
+          description: Filtrar por terreno
+          type: string
+          required: false
+        - name: include_residents
+          in: query
+          description: Incluir detalhes completos dos residentes do planeta
+          type: boolean
+          default: false
+          required: false
+        - name: include_films
+          in: query
+          description: Incluir detalhes completos dos filmes onde o planeta aparece
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (residents, films)
+          type: boolean
+          default: false
+          required: false
+      responses:
+        "200":
+          description: Lista de planetas retornada com sucesso
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              count:
+                type: integer
+              total:
+                type: integer
+              next:
+                type: string
+              previous:
+                type: string
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Planet"
+        "400":
+          description: Erro de validação
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: Erro interno
+          schema:
+            $ref: "#/definitions/Error"
+        "503":
+          description: SWAPI indisponível
+          schema:
+            $ref: "#/definitions/Error"
+
+  /starships:
+    get:
+      summary: Buscar naves espaciais
+      description: |
+        Retorna lista de naves com suporte a busca, paginação, filtros e enriquecimento de dados relacionados.
+
+        Use include_all=true para obter o relacionamento completo da nave com pilotos e filmes.
+      operationId: getStarships
+      x-google-backend:
+        address: https://get-starships-fint7be5qa-uc.a.run.app
+      parameters:
+        - name: search
+          in: query
+          description: Termo de busca para filtrar naves por nome
+          type: string
+          required: false
+        - name: page
+          in: query
+          description: Número da página (1-100)
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 1
+          required: false
+        - name: starship_class
+          in: query
+          description: Filtrar por classe da nave
+          type: string
+          required: false
+        - name: manufacturer
+          in: query
+          description: Filtrar por fabricante
+          type: string
+          required: false
+        - name: include_pilots
+          in: query
+          description: Incluir detalhes completos dos pilotos da nave
+          type: boolean
+          default: false
+          required: false
+        - name: include_films
+          in: query
+          description: Incluir detalhes completos dos filmes onde a nave aparece
+          type: boolean
+          default: false
+          required: false
+        - name: include_all
+          in: query
+          description: Incluir todos os detalhes relacionados (pilots, films)
+          type: boolean
+          default: false
+          required: false
+      responses:
+        "200":
+          description: Lista de naves retornada com sucesso
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              count:
+                type: integer
+              total:
+                type: integer
+              next:
+                type: string
+              previous:
+                type: string
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Starship"
+        "400":
+          description: Erro de validação
+          schema:
+            $ref: "#/definitions/Error"
+        "500":
+          description: Erro interno
+          schema:
+            $ref: "#/definitions/Error"
+        "503":
+          description: SWAPI indisponível
+          schema:
+            $ref: "#/definitions/Error"
+
+definitions:
+  Film:
+    type: object
+    properties:
+      episode_id:
+        type: integer
+        example: 5
+      title:
+        type: string
+        example: "The Empire Strikes Back"
+      release_date:
+        type: string
+        example: "1980-05-17"
+      director:
+        type: string
+        example: "Irvin Kershner"
+      producer:
+        type: string
+        example: "Gary Kurtz, Rick McCallum"
+      opening_crawl:
+        type: string
+        description: Texto de abertura (truncado para 100 caracteres)
+      characters_count:
+        type: integer
+        description: Número de personagens no filme
+      planets_count:
+        type: integer
+        description: Número de planetas
+      starships_count:
+        type: integer
+        description: Número de naves
+      vehicles_count:
+        type: integer
+        description: Número de veículos
+      species_count:
+        type: integer
+        description: Número de espécies
+      url:
+        type: string
+        description: URL da SWAPI
+
+  Character:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "Luke Skywalker"
+      height:
+        type: string
+        example: "172"
+      mass:
+        type: string
+        example: "77"
+      hair_color:
+        type: string
+      skin_color:
+        type: string
+      eye_color:
+        type: string
+      birth_year:
+        type: string
+        example: "19BBY"
+      gender:
+        type: string
+        enum: [male, female, n/a, hermaphrodite]
+      homeworld:
+        type: string
+      films_count:
+        type: integer
+      species_count:
+        type: integer
+      vehicles_count:
+        type: integer
+      starships_count:
+        type: integer
+      url:
+        type: string
+
+  Planet:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "Tatooine"
+      rotation_period:
+        type: string
+      orbital_period:
+        type: string
+      diameter:
+        type: string
+      climate:
+        type: string
+        example: "arid"
+      gravity:
+        type: string
+      terrain:
+        type: string
+        example: "desert"
+      surface_water:
+        type: string
+      population:
+        type: string
+      residents_count:
+        type: integer
+      films_count:
+        type: integer
+      url:
+        type: string
+
+  Starship:
+    type: object
+    properties:
+      name:
+        type: string
+        example: "Millennium Falcon"
+      model:
+        type: string
+      manufacturer:
+        type: string
+      cost_in_credits:
+        type: string
+      length:
+        type: string
+      max_atmosphering_speed:
+        type: string
+      crew:
+        type: string
+      passengers:
+        type: string
+      cargo_capacity:
+        type: string
+      consumables:
+        type: string
+      hyperdrive_rating:
+        type: string
+      MGLT:
+        type: string
+      starship_class:
+        type: string
+        example: "Light freighter"
+      pilots_count:
+        type: integer
+      films_count:
+        type: integer
+      url:
+        type: string
+
+  Error:
+    type: object
+    properties:
+      success:
+        type: boolean
+        example: false
+      error:
+        type: string
+        description: Descrição do erro
+      message:
+        type: string
+        description: Mensagem detalhada
+      details:
+        type: array
+        description: Detalhes de validação (apenas para erro 400)
+        items:
+          type: object

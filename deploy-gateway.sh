@@ -3,7 +3,7 @@
 ################################################################################
 # Deploy Script - API Gateway para Star Wars API
 #
-# Este script configura e deploya o API Gateway do GCP para unificar
+# Esse script configura e deploya o API Gateway do GCP para unificar
 # as 4 Cloud Functions em uma única URL.
 #
 # Uso:
@@ -11,7 +11,6 @@
 #
 # Exemplos:
 #   ./deploy-gateway.sh starwars-api-powerofdata us-central1
-#   ./deploy-gateway.sh (usa projeto atual e us-central1)
 ################################################################################
 
 set -e  # Para execução se houver erro
@@ -21,7 +20,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
 # Funções auxiliares
 print_header() {
@@ -81,13 +80,13 @@ print_info "API ID: $API_ID"
 print_info "Gateway ID: $GATEWAY_ID"
 echo ""
 
-# Validação 3: Verificar se openapi.yaml existe
-if [ ! -f "openapi.yaml" ]; then
-    print_error "Arquivo openapi.yaml não encontrado!"
+# Validação 3: Verificar se openapi-gateway.yaml existe
+if [ ! -f "openapi-gateway.yaml" ]; then
+    print_error "Arquivo openapi-gateway.yaml não encontrado!"
     echo "Certifique-se de estar no diretório raiz do projeto."
     exit 1
 fi
-print_success "Arquivo openapi.yaml encontrado"
+print_success "Arquivo openapi-gateway.yaml encontrado"
 
 # Validação 4: Verificar autenticação
 print_info "Verificando autenticação..."
@@ -148,7 +147,7 @@ print_info "Config ID: $CONFIG_ID"
 # Deploy da configuração
 if gcloud api-gateway api-configs create $CONFIG_ID \
     --api=$API_ID \
-    --openapi-spec=openapi.yaml \
+    --openapi-spec=openapi-gateway.yaml \
     --project=$PROJECT_ID \
     --backend-auth-service-account=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")-compute@developer.gserviceaccount.com 2>&1 | tee /tmp/api-config-deploy.log; then
 

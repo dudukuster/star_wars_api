@@ -3,14 +3,13 @@
 ################################################################################
 # Deploy Script - Star Wars API PowerOfData
 #
-# Este script automatiza o deploy das Cloud Functions no Google Cloud Platform
+# Esse script automatiza o deploy das Cloud Functions no Google Cloud Platform
 #
 # Uso:
 #   ./deploy.sh [PROJECT_ID] [REGION]
 #
 # Exemplos:
 #   ./deploy.sh starwars-api-powerofdata us-central1
-#   ./deploy.sh (usa projeto atual e us-central1)
 ################################################################################
 
 set -e  # Para execução se houver erro
@@ -20,7 +19,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
 # Funções auxiliares
 print_header() {
