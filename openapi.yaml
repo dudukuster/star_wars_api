@@ -10,6 +10,8 @@ info:
     **Teste Técnico:** Desenvolvedor Back End Python Júnior - PowerOfData
 
     Recursos: Validação Pydantic, Cache LRU, Retry automático, Logging estruturado, CORS habilitado
+
+    **Autenticação:** Requer API Key no header `x-api-key`
   version: "1.0.0"
 host: "starwars-api-gateway-4evvcnbe.uc.gateway.dev"
 schemes:
@@ -18,6 +20,17 @@ produces:
   - application/json
 consumes:
   - application/json
+
+# Configuração de segurança - API Key obrigatória
+securityDefinitions:
+  api_key:
+    type: "apiKey"
+    name: "x-api-key"
+    in: "header"
+
+# Aplicar segurança globalmente em todos os endpoints
+security:
+  - api_key: []
 
 paths:
   /films:
