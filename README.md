@@ -18,6 +18,16 @@ A aplicação segue uma arquitetura serverless com os seguintes componentes:
 
 ## Recursos Disponíveis
 
+### Autenticação
+
+Todos os endpoints requerem autenticação via API Key. Inclua o header `x-api-key` em todas as requisições:
+
+```bash
+curl -H "x-api-key: YOUR_API_KEY" "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/films"
+```
+
+Requisições sem API Key retornarão erro 401 (Unauthorized).
+
 ### Endpoints
 
 A API oferece quatro endpoints principais, todos acessíveis através do API Gateway:
@@ -41,7 +51,8 @@ Consulta filmes da saga Star Wars com suporte a busca, ordenação e enriquecime
 
 **Exemplo**:
 ```bash
-curl "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/films?search=empire&include_all=true"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/films?search=empire&include_all=true"
 ```
 
 #### 2. Characters (Personagens)
@@ -63,7 +74,8 @@ Consulta personagens com filtros avançados e enriquecimento de dados relacionad
 
 **Exemplo**:
 ```bash
-curl "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/characters?search=vader&include_all=true"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/characters?search=vader&include_all=true"
 ```
 
 #### 3. Planets (Planetas)
@@ -82,7 +94,8 @@ Consulta planetas com suporte a busca, filtros e ordenação.
 
 **Exemplo**:
 ```bash
-curl "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/planets?search=tatooine"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/planets?search=tatooine"
 ```
 
 #### 4. Starships (Naves)
@@ -100,7 +113,8 @@ Consulta naves espaciais com filtros e ordenação.
 
 **Exemplo**:
 ```bash
-curl "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/starships?search=falcon"
+curl -H "x-api-key: YOUR_API_KEY" \
+  "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/starships?search=falcon"
 ```
 
 ## Funcionalidades Principais
