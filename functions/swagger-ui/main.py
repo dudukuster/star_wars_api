@@ -145,7 +145,7 @@ def swagger_ui(request):
     headers = {
         'Content-Type': 'text/html; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=300'  # Cache por 5 minutos
+        'Cache-Control': 'public, max-age=300' 
     }
 
     return Response(html, status=200, headers=headers)

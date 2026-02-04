@@ -47,6 +47,7 @@ class FilmQueryParams(BaseModel):
 
     Parâmetros:
         search: Termo de busca (max 100 caracteres)
+        page: Número da página (1-10) - OBRIGATÓRIO
         sort_by: Campo para ordenação
         order: Ordem (asc ou desc)
         include_characters: Incluir detalhes completos dos personagens
@@ -60,6 +61,12 @@ class FilmQueryParams(BaseModel):
         None,
         max_length=100,
         description="Busca por título do filme"
+    )
+    page: int = Field(
+        ...,
+        ge=1,
+        le=10,
+        description="Número da página (1-10) - OBRIGATÓRIO"
     )
     sort_by: Optional[FilmSortBy] = Field(
         FilmSortBy.RELEASE_DATE,

@@ -39,6 +39,7 @@ def get_films(request: Request):
 
     Query Parameters:
         search (str): Busca por título
+        page (int): Número da página (1-10, padrão: 1)
         sort_by (str): Campo para ordenação (title, release_date, episode_id)
         order (str): Ordem (asc, desc)
         include_characters (bool): Incluir detalhes completos dos personagens
@@ -54,14 +55,28 @@ def get_films(request: Request):
     Exemplos:
         GET /get-films
         GET /get-films?search=empire
-        GET /get-films?sort_by=title&order=asc
+        GET /get-films?page=1&sort_by=title&order=asc
         GET /get-films?search=star&sort_by=episode_id&order=desc
         GET /get-films?search=hope&include_characters=true
-        GET /get-films?search=empire&include_all=true  (Recomendado!)
+        GET /get-films?page=1&include_all=true  (Recomendado com paginação!)
     """
     # Extrair e validar parâmetros
+    page_str = request.args.get('page')
+    if not page_str:
+        return (
+            json.dumps({
+                'success': False,
+                'error': 'Validation Error',
+                'message': 'O parâmetro "page" é obrigatório',
+                'details': [{'field': 'page', 'message': 'Campo obrigatório'}]
+            }),
+            400,
+            {'Content-Type': 'application/json'}
+        )
+
     params = FilmQueryParams(
         search=request.args.get('search'),
+        page=int(page_str),
         sort_by=request.args.get('sort_by', 'release_date'),
         order=request.args.get('order', 'asc'),
         include_characters=request.args.get('include_characters', 'false').lower() == 'true',
@@ -76,10 +91,31 @@ def get_films(request: Request):
     client = get_swapi_client()
     films = client.get_films(search=params.search)
 
-    # Enriquecer dados
+    # Enriquecer dados básicos (sem detalhes) para ordenação
+    enriched_films_basic = [enrich_film_data(film) for film in films]
+
+    # Ordenar resultados ANTES da paginação
+    sorted_films = sort_data(
+        enriched_films_basic,
+        sort_by=params.sort_by,
+        order=params.order
+    )
+
+    # Implementar paginação
+    # page_size = 1 para evitar timeout quando include_all=true
+    page_size = 1
+    total_count = len(sorted_films)
+    start_index = (params.page - 1) * page_size
+    end_index = start_index + page_size
+
+    # Obter filmes da página atual
+    films_page = sorted_films[start_index:end_index]
+
+    # Enriquecer apenas os filmes da página atual (evita timeout)
     enriched_films = []
-    for film in films:
-        enriched_film = enrich_film_data(film)
+    for film in films_page:
+        # Buscar filme original para obter URLs
+        original_film = next(f for f in films if f.get('title') == film.get('title'))
 
         # Se include_all=true, habilitar todos os includes
         if params.include_all:
@@ -91,43 +127,45 @@ def get_films(request: Request):
 
         # Incluir detalhes completos dos personagens (com homeworld enriquecido)
         if params.include_characters:
-            character_urls = film.get('characters', [])
-            enriched_film['characters'] = fetch_characters_details(character_urls, client, enrich_homeworld=True)
+            character_urls = original_film.get('characters', [])
+            film['characters'] = fetch_characters_details(character_urls, client, enrich_homeworld=True)
 
         # Incluir detalhes completos dos planetas
         if params.include_planets:
-            planet_urls = film.get('planets', [])
-            enriched_film['planets'] = fetch_planets_details(planet_urls, client)
+            planet_urls = original_film.get('planets', [])
+            film['planets'] = fetch_planets_details(planet_urls, client)
 
         # Incluir detalhes completos das espécies
         if params.include_species:
-            species_urls = film.get('species', [])
-            enriched_film['species'] = fetch_species_details(species_urls, client)
+            species_urls = original_film.get('species', [])
+            film['species'] = fetch_species_details(species_urls, client)
 
         # Incluir detalhes completos dos veículos
         if params.include_vehicles:
-            vehicle_urls = film.get('vehicles', [])
-            enriched_film['vehicles'] = fetch_vehicles_details(vehicle_urls, client)
+            vehicle_urls = original_film.get('vehicles', [])
+            film['vehicles'] = fetch_vehicles_details(vehicle_urls, client)
 
         # Incluir detalhes completos das naves
         if params.include_starships:
-            starship_urls = film.get('starships', [])
-            enriched_film['starships'] = fetch_starships_details(starship_urls, client)
+            starship_urls = original_film.get('starships', [])
+            film['starships'] = fetch_starships_details(starship_urls, client)
 
-        enriched_films.append(enriched_film)
+        enriched_films.append(film)
 
-    # Ordenar resultados
-    sorted_films = sort_data(
-        enriched_films,
-        sort_by=params.sort_by,
-        order=params.order
-    )
+    # Calcular próxima e anterior página
+    next_page = params.page + 1 if end_index < total_count else None
+    previous_page = params.page - 1 if params.page > 1 else None
 
-    # Montar resposta
+    # Montar resposta com paginação
     response = {
         'success': True,
-        'count': len(sorted_films),
-        'data': sorted_films
+        'count': len(enriched_films),
+        'total': total_count,
+        'page': params.page,
+        'page_size': page_size,
+        'next': next_page,
+        'previous': previous_page,
+        'data': enriched_films
     }
 
     return (

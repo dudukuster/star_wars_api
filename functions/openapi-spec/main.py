@@ -46,7 +46,7 @@ def openapi_spec(request):
         headers = {
             'Content-Type': 'application/x-yaml; charset=utf-8',
             'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=300'  # Cache por 5 minutos
+            'Cache-Control': 'public, max-age=300'  
         }
 
         return Response(yaml_content, status=200, headers=headers)
