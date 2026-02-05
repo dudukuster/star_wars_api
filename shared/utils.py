@@ -161,7 +161,7 @@ def fetch_species_details(species_urls: List[str], swapi_client) -> List[Dict]:
         swapi_client: Instância do SWAPIClient
 
     Returns:
-        Lista de dicionários com dados das espécies
+        Lista de dicionários com dados das espécies (com homeworld enriquecido)
     """
     species = []
 
@@ -171,6 +171,14 @@ def fetch_species_details(species_urls: List[str], swapi_client) -> List[Dict]:
             if species_id:
                 species_data = swapi_client.get_species_by_id(species_id)
                 enriched_species = enrich_species_data(species_data)
+
+                # Enriquecer homeworld da espécie
+                homeworld_url = species_data.get('homeworld')
+                if homeworld_url:
+                    homeworld_details = fetch_homeworld_details(homeworld_url, swapi_client)
+                    if homeworld_details:
+                        enriched_species['homeworld'] = homeworld_details
+
                 species.append(enriched_species)
         except Exception:
             continue

@@ -30,14 +30,13 @@ A aplicação segue uma arquitetura serverless com os seguintes componentes:
 
 ### Diagramas de Arquitetura
 
-Diagramas C4 completos da arquitetura estão disponíveis em `arquitetura_tecnica/`:
+Diagramas C4 completos da arquitetura estão disponíveis em `arquitetura_tecnica/`, junto com um arquivo readme.md com informações detalhadas sobre cada um:
+
 - **C4_L1.png**: Diagrama de Contexto (visão geral do sistema)
 - **C4_L2.png**: Diagrama de Containers (componentes principais)
 - **C4_L3.png**: Diagrama de Componentes (detalhes de uma Cloud Function)
 - **C4_L4.png**: Diagrama de Código (classes e validadores)
 - **Diagrama_Deploy.png**: Infraestrutura GCP e deployment
-
-Informações mais detalhadas dos diagramas no diretório `arquitetura_tecnica/README.md`.
 
 ## Recursos Disponíveis
 
@@ -169,6 +168,8 @@ Por exemplo, ao buscar um filme com `include_all=true`, você recebe:
 - Detalhes de todos os planetas que aparecem no filme
 - Informações completas sobre espécies, veículos e naves
 
+**Enriquecimento em Cascata**: Ao usar `include_species=true`, cada espécie retorna com seu `homeworld` completamente enriquecido (nome, clima, gravidade, terreno, população, etc), eliminando a necessidade de requisições adicionais. O mesmo se aplica a outros relacionamentos - por exemplo, planetas incluem residentes com suas espécies enriquecidas.
+
 Isso elimina a necessidade de múltiplas requisições para obter dados relacionados.
 
 ### Validação e Tratamento de Erros
@@ -184,6 +185,37 @@ Todos os parâmetros são validados usando Pydantic, garantindo:
 - **Retry Automático**: Até 3 tentativas com backoff exponencial
 - **Singleton Pattern**: Reutilização de conexões HTTP
 - **Logging Estruturado**: Logs em formato JSON para fácil análise
+
+#### Busca Paralela com ThreadPoolExecutor
+
+Quando filtros locais são aplicados (gender, climate, starship_class), a API busca TODAS as páginas da SWAPI em paralelo usando ThreadPoolExecutor, reduzindo o tempo de resposta de aproximadamente 9 segundos (sequencial) para 2-3 segundos (paralelo).
+
+#### Cache LRU Compartilhado
+
+O cache é compartilhado entre diferentes filtros. Por exemplo, ao buscar `gender=male`, o cache é populado com todas as páginas de personagens. Uma busca subsequente por `gender=female` reutiliza o mesmo cache, retornando resultados em aproximadamente 100-200ms ao invés de 2-3 segundos.
+
+## Decisões Arquiteturais
+
+### Filtros Locais vs SWAPI
+
+A SWAPI não suporta filtros específicos como `gender`, `climate`, `terrain` ou `starship_class`. A solução implementada busca TODAS as páginas da SWAPI em paralelo, aplica filtros localmente, e recalcula a paginação sobre o dataset filtrado, garantindo consistência entre os metadados de paginação (total, next, previous) e os dados retornados. Essa abordagem resolveu o problema de paginação inconsistente que ocorria quando apliquei filtros após buscar apenas uma página da SWAPI. 
+
+### Paginação Obrigatória
+
+Para evitar timeout em requisições grandes (82 personagens, 60 planetas, 36 starships), o parâmetro `page` é obrigatório em todos os endpoints. Requisições sem o parâmetro `page` retornam erro 400 (Bad Request) com mensagem clara indicando a obrigatoriedade.
+
+Essa decisão garante que:
+- As Cloud Functions não excedam o timeout de 60 segundos
+- O tráfego de rede seja controlado e previsível
+- A experiência do usuário seja consistente com APIs paginadas
+
+### Arquitetura Serverless com Cloud Functions Gen 2
+
+A escolha por Cloud Functions Gen 2 ao invés de Gen 1 oferece:
+- **Maior flexibilidade**: Timeout ajustável até 60 minutos (usamos 60 segundos)
+- **Melhor integração**: Suporte nativo ao Cloud Run e Traffic Splitting
+- **Performance**: Cold start mais rápido e melhor gerenciamento de recursos
+- **Custo-benefício**: Cobrado por uso real (100ms de granularidade)
 
 ## Estrutura do Projeto
 
@@ -367,19 +399,5 @@ curl "http://localhost:8082?page=1&search=Tatooine"
 cd functions/starships
 functions-framework --target=get_starships --port=8083
 curl "http://localhost:8083?page=1&search=Falcon"
-```
-
-### Observações sobre Cache e Performance
-
-As funções utilizam:
-- **Cache LRU (@lru_cache)**: Segunda requisição com mesmos parâmetros é mais rápida
-- **Retry automático**: Até 3 tentativas em caso de falhas transitórias
-- **Paginação obrigatória**: Parâmetro `page` é obrigatório em todos os endpoints
-
-Para verificar o cache funcionando, execute a mesma requisição duas vezes e compare o tempo:
-
-```bash
-time curl "http://localhost:8080?page=1"
-time curl "http://localhost:8080?page=1"  # Deve ser mais rápido
 ```
 

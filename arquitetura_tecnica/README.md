@@ -1,7 +1,5 @@
 # Diagramas C4
 
-## O que é o Modelo C4?
-
 O C4 Model (Context, Containers, Components, Code) é uma abordagem para visualização de arquitetura de software criada por Simon Brown. O modelo utiliza uma hierarquia de diagramas com diferentes níveis de abstração, permitindo que diferentes públicos compreendam o sistema de acordo com suas necessidades, foi utilizado o plantuml para a construção dos diagramas (documentação em referências)
 
 ## Os 4 Níveis do C4
