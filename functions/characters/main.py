@@ -17,6 +17,7 @@ from decorators import add_cors_headers, log_request, handle_errors
 from utils import (
     enrich_character_data,
     filter_by_field,
+    fetch_all_and_paginate,
     fetch_films_details,
     fetch_homeworld_details,
     fetch_species_details,
@@ -82,15 +83,24 @@ def get_characters(request: Request):
         include_all=request.args.get('include_all', 'false').lower() == 'true'
     )
 
-    # Buscar personagens na SWAPI (usando singleton)
+    # Buscar TODOS os personagens da SWAPI e aplicar filtros locais
+    # Isso garante paginação consistente quando usamos filtros como gender
     client = get_swapi_client()
-    data = client.get_people(search=params.search, page=params.page)
 
-    characters = data.get('results', [])
-
-    # Aplicar filtro de gênero se especificado
+    # Preparar filtros locais (que a SWAPI não suporta nativamente)
+    filters = {}
     if params.gender:
-        characters = filter_by_field(characters, 'gender', params.gender)
+        filters['gender'] = params.gender
+
+    # Buscar todos os dados, filtrar e paginar corretamente
+    pagination_result = fetch_all_and_paginate(
+        fetch_func=client.get_people,
+        params=params,
+        filters=filters,
+        page_size=10
+    )
+
+    characters = pagination_result['items']
 
     # Enriquecer dados
     enriched_characters = []
@@ -137,19 +147,15 @@ def get_characters(request: Request):
 
         enriched_characters.append(enriched_char)
 
-    # Calcular próxima e anterior página
-    next_page = params.page + 1 if data.get('next') else None
-    previous_page = params.page - 1 if params.page > 1 else None
-
-    # Montar resposta padronizada
+    # Montar resposta padronizada com paginação correta
     response = {
         'success': True,
         'count': len(enriched_characters),
-        'total': data.get('count', 0),
+        'total': pagination_result['total'],         # Total correto após filtros
         'page': params.page,
         'page_size': len(enriched_characters),
-        'next': next_page,
-        'previous': previous_page,
+        'next': pagination_result['next'],           # Próxima página correta
+        'previous': pagination_result['previous'],   # Página anterior correta
         'data': enriched_characters
     }
 

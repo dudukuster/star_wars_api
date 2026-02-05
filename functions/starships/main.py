@@ -16,6 +16,7 @@ from decorators import add_cors_headers, log_request, handle_errors
 from utils import (
     enrich_starship_data,
     filter_by_field,
+    fetch_all_and_paginate,
     fetch_characters_details,
     fetch_films_details
 )
@@ -73,18 +74,26 @@ def get_starships(request: Request):
         include_all=request.args.get('include_all', 'false').lower() == 'true'
     )
 
-    # Buscar naves na SWAPI (usando singleton)
+    # Buscar TODAS as naves da SWAPI e aplicar filtros locais
+    # Isso garante paginação consistente quando usamos filtros como starship_class/manufacturer
     client = get_swapi_client()
-    data = client.get_starships(search=params.search, page=params.page)
 
-    starships = data.get('results', [])
-
-    # Aplicar filtros se especificados
+    # Preparar filtros locais (que a SWAPI não suporta nativamente)
+    filters = {}
     if params.starship_class:
-        starships = filter_by_field(starships, 'starship_class', params.starship_class)
-
+        filters['starship_class'] = params.starship_class
     if params.manufacturer:
-        starships = filter_by_field(starships, 'manufacturer', params.manufacturer)
+        filters['manufacturer'] = params.manufacturer
+
+    # Buscar todos os dados, filtrar e paginar corretamente
+    pagination_result = fetch_all_and_paginate(
+        fetch_func=client.get_starships,
+        params=params,
+        filters=filters,
+        page_size=10
+    )
+
+    starships = pagination_result['items']
 
     # Enriquecer dados
     enriched_starships = []
@@ -108,19 +117,15 @@ def get_starships(request: Request):
 
         enriched_starships.append(enriched_starship)
 
-    # Calcular próxima e anterior página
-    next_page = params.page + 1 if data.get('next') else None
-    previous_page = params.page - 1 if params.page > 1 else None
-
-    # Montar resposta padronizada
+    # Montar resposta padronizada com paginação correta
     response = {
         'success': True,
         'count': len(enriched_starships),
-        'total': data.get('count', 0),
+        'total': pagination_result['total'],         # Total correto após filtros
         'page': params.page,
         'page_size': len(enriched_starships),
-        'next': next_page,
-        'previous': previous_page,
+        'next': pagination_result['next'],           # Próxima página correta
+        'previous': pagination_result['previous'],   # Página anterior correta
         'data': enriched_starships
     }
 

@@ -17,6 +17,7 @@ from decorators import add_cors_headers, log_request, handle_errors
 from utils import (
     enrich_planet_data,
     filter_by_field,
+    fetch_all_and_paginate,
     fetch_characters_details,
     fetch_films_details
 )
@@ -74,18 +75,26 @@ def get_planets(request: Request):
         include_all=request.args.get('include_all', 'false').lower() == 'true'
     )
 
-    # Buscar planetas na SWAPI (usando singleton)
+    # Buscar TODOS os planetas da SWAPI e aplicar filtros locais
+    # Isso garante paginação consistente quando usamos filtros como climate/terrain
     client = get_swapi_client()
-    data = client.get_planets(search=params.search, page=params.page)
 
-    planets = data.get('results', [])
-
-    # Aplicar filtros se especificados
+    # Preparar filtros locais (que a SWAPI não suporta nativamente)
+    filters = {}
     if params.climate:
-        planets = filter_by_field(planets, 'climate', params.climate)
-
+        filters['climate'] = params.climate
     if params.terrain:
-        planets = filter_by_field(planets, 'terrain', params.terrain)
+        filters['terrain'] = params.terrain
+
+    # Buscar todos os dados, filtrar e paginar corretamente
+    pagination_result = fetch_all_and_paginate(
+        fetch_func=client.get_planets,
+        params=params,
+        filters=filters,
+        page_size=10
+    )
+
+    planets = pagination_result['items']
 
     # Enriquecer dados
     enriched_planets = []
@@ -109,19 +118,15 @@ def get_planets(request: Request):
 
         enriched_planets.append(enriched_planet)
 
-    # Calcular próxima e anterior página
-    next_page = params.page + 1 if data.get('next') else None
-    previous_page = params.page - 1 if params.page > 1 else None
-
-    # Montar resposta padronizada
+    # Montar resposta padronizada com paginação correta
     response = {
         'success': True,
         'count': len(enriched_planets),
-        'total': data.get('count', 0),
+        'total': pagination_result['total'],         # Total correto após filtros
         'page': params.page,
         'page_size': len(enriched_planets),
-        'next': next_page,
-        'previous': previous_page,
+        'next': pagination_result['next'],           # Próxima página correta
+        'previous': pagination_result['previous'],   # Página anterior correta
         'data': enriched_planets
     }
 

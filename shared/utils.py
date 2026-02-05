@@ -5,7 +5,96 @@ Este módulo contém funções auxiliares usadas em múltiplas Cloud Functions,
 incluindo formatação de dados, ordenação e enriquecimento de informações.
 """
 
-from typing import Any, Dict, List, Optional
+import concurrent.futures
+from typing import Any, Callable, Dict, List, Optional
+
+
+def fetch_all_and_paginate(
+    fetch_func: Callable,
+    params: Any,
+    filters: Optional[Dict[str, str]] = None,
+    page_size: int = 10
+) -> Dict[str, Any]:
+    """
+    Busca todos os dados da SWAPI em paralelo, aplica filtros locais,
+    e retorna paginação correta do dataset filtrado.
+
+    Esta função resolve o problema de paginação inconsistente quando
+    aplicamos filtros que a SWAPI não suporta nativamente (como gender,
+    climate, starship_class, etc).
+
+    Args:
+        fetch_func: Função para buscar dados (ex: client.get_people)
+        params: Objeto QueryParams com parâmetros da requisição
+        filters: Dict com filtros locais a aplicar (ex: {'gender': 'male'})
+        page_size: Tamanho da página (default: 10)
+
+    Returns:
+        Dict com:
+            - items: Lista de itens da página atual
+            - total: Total de itens após aplicar filtros
+            - next: Número da próxima página (None se não houver)
+            - previous: Número da página anterior (None se não houver)
+
+    Example:
+        result = fetch_all_and_paginate(
+            fetch_func=client.get_people,
+            params=params,
+            filters={'gender': params.gender},
+            page_size=10
+        )
+    """
+    # 1. Buscar primeira página para determinar total de páginas
+    first_page = fetch_func(search=params.search, page=1)
+    all_items = first_page.get('results', [])
+
+    total_swapi = first_page.get('count', 0)
+    items_per_page = len(first_page.get('results', [])) or 10
+    total_pages = (total_swapi + items_per_page - 1) // items_per_page
+
+    # 2. Buscar demais páginas em paralelo (se houver)
+    if total_pages > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Criar futures para todas as páginas restantes
+            future_to_page = {
+                executor.submit(fetch_func, params.search, page): page
+                for page in range(2, total_pages + 1)
+            }
+
+            # Coletar resultados conforme completam
+            for future in concurrent.futures.as_completed(future_to_page):
+                try:
+                    data = future.result()
+                    all_items.extend(data.get('results', []))
+                except Exception:
+                    # Em caso de erro em alguma página, continua com as demais
+                    continue
+
+    # 3. Aplicar filtros locais (se especificados)
+    if filters:
+        for field, value in filters.items():
+            if value:  # Só aplica filtro se valor foi fornecido
+                all_items = filter_by_field(all_items, field, value)
+
+    # 4. Calcular totais do dataset filtrado
+    total_filtered = len(all_items)
+    total_pages_filtered = (total_filtered + page_size - 1) // page_size if total_filtered > 0 else 1
+
+    # 5. Aplicar paginação no nosso dataset filtrado
+    start_idx = (params.page - 1) * page_size
+    end_idx = start_idx + page_size
+    page_items = all_items[start_idx:end_idx]
+
+    # 6. Calcular next/previous corretos
+    next_page = params.page + 1 if params.page < total_pages_filtered else None
+    previous_page = params.page - 1 if params.page > 1 else None
+
+    return {
+        'items': page_items,
+        'total': total_filtered,
+        'next': next_page,
+        'previous': previous_page
+    }
 
 
 def fetch_films_details(film_urls: List[str], swapi_client) -> List[Dict]:

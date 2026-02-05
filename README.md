@@ -4,29 +4,70 @@ Uma API RESTful desenvolvida em Python para consultar informações sobre o univ
 
 ## Visão Geral
 
-Este projeto foi desenvolvido como parte de um desafio técnico para a posição de Desenvolvedor Backend Python Júnior na PowerOfData. A aplicação é executada no Google Cloud Platform utilizando Cloud Functions Gen 2 e API Gateway para fornecer uma interface unificada e escalável.
+Esse projeto foi desenvolvido como parte de um desafio técnico para a posição de Desenvolvedor Backend Python Júnior na PowerOfData. A aplicação é executada no Google Cloud Platform utilizando Cloud Functions Gen 2 e API Gateway para fornecer uma interface unificada e escalável.
+
+**IMPORTANTE**
+### Autenticação
+Todos os endpoints requerem autenticação via API Key. Adicione o header `x-api-key` em todas as requisições:
+### api_key: AIzaSyDTlS64NzQ9NHKIWk9Id8Idd8m1oCvbExc
+```bash
+curl -H "x-api-key: YOUR_API_KEY" "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/films?page=1"
+```
+### Observação: Sei que não é uma boa prática compartilhar chaves em repositórios públicos, porém como é um teste técnico utilizando uma api pública considerei que não teria problema em compartilhar
+
+Requisições sem API Key retornarão erro 401 (Unauthorized).
 
 ## Arquitetura
 
 A aplicação segue uma arquitetura serverless com os seguintes componentes:
 
-- **Cloud Functions Gen 2**: Quatro funções serverless independentes para cada recurso
-- **API Gateway**: Interface unificada que centraliza todos os endpoints
+- **Cloud Functions Gen 2**: Seis funções serverless (4 recursos + documentação Swagger UI + OpenAPI spec)
+- **API Gateway**: Interface unificada que centraliza todos os endpoints com autenticação via API Key
 - **SWAPI Client**: Cliente HTTP com cache LRU e retry automático
 - **Validadores Pydantic**: Validação robusta de parâmetros de entrada
 - **Sistema de Enriquecimento**: Busca e enriquece dados relacionados sob demanda
+- **Paginação Obrigatória**: Todos os endpoints exigem parâmetro `page` para evitar timeout em requisições grandes
+
+### Diagramas de Arquitetura
+
+Diagramas C4 completos da arquitetura estão disponíveis em `arquitetura_tecnica/`:
+- **C4_L1.png**: Diagrama de Contexto (visão geral do sistema)
+- **C4_L2.png**: Diagrama de Containers (componentes principais)
+- **C4_L3.png**: Diagrama de Componentes (detalhes de uma Cloud Function)
+- **C4_L4.png**: Diagrama de Código (classes e validadores)
+- **Diagrama_Deploy.png**: Infraestrutura GCP e deployment
+
+Informações mais detalhadas dos diagramas no diretório `arquitetura_tecnica/README.md`.
 
 ## Recursos Disponíveis
 
-### Autenticação
+### Documentação
 
-Todos os endpoints requerem autenticação via API Key. Inclua o header `x-api-key` em todas as requisições:
+A API possui documentação Swagger UI disponível em:
 
-```bash
-curl -H "x-api-key: YOUR_API_KEY" "https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/films"
-```
+**URL**: `https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/docs`
 
-Requisições sem API Key retornarão erro 401 (Unauthorized).
+Através do Swagger UI você pode:
+- Visualizar todos os endpoints disponíveis
+- Testar requisições diretamente no navegador
+- Ver exemplos de respostas
+- Consultar parâmetros obrigatórios e opcionais
+
+A especificação OpenAPI completa está disponível em:
+**URL**: `https://starwars-api-gateway-4evvcnbe.uc.gateway.dev/openapi.yaml`
+
+### Paginação
+
+**IMPORTANTE**: Todos os endpoints exigem o parâmetro `page` (obrigatório) para evitar timeout em requisições grandes.
+
+- Requisições sem o parâmetro `page` retornarão erro 400 (Bad Request)
+- Todos os endpoints retornam informações de paginação na resposta:
+  - `page`: Página atual
+  - `page_size`: Quantidade de itens na página atual
+  - `next`: Número da próxima página (null se não houver)
+  - `previous`: Número da página anterior (null se não houver)
+  - `total`: Total de itens disponíveis
+  - `count`: Quantidade de itens na página atual
 
 ### Endpoints
 
@@ -149,33 +190,47 @@ Todos os parâmetros são validados usando Pydantic, garantindo:
 ```
 star_wars_api/
 ├── shared/                      # Módulos compartilhados
-│   ├── swapi_client.py         # Cliente HTTP para SWAPI
-│   ├── validators.py           # Validadores Pydantic
-│   ├── decorators.py           # Decoradores (CORS, logs, errors)
-│   └── utils.py                # Funções utilitárias e enriquecimento
-├── functions/                   # Cloud Functions
+│   ├── swapi_client.py         # Cliente HTTP para SWAPI com cache LRU e retry
+│   ├── validators.py           # Validadores Pydantic para todos os endpoints
+│   ├── decorators.py           # Decoradores (CORS, logs, tratamento de erros)
+│   └── utils.py                # Funções utilitárias e enriquecimento de dados
+├── functions/                   # Cloud Functions Gen 2
 │   ├── films/
-│   │   └── main.py
+│   │   ├── main.py             # Endpoint GET /films
+│   │   ├── requirements.txt
+│   │   └── [shared files]      # Cópias dos arquivos shared/
 │   ├── characters/
-│   │   └── main.py
+│   │   ├── main.py             # Endpoint GET /characters
+│   │   ├── requirements.txt
+│   │   └── [shared files]
 │   ├── planets/
-│   │   └── main.py
-│   └── starships/
-│       └── main.py
-├── tests/                       # Testes unitários
-│   ├── conftest.py             # Fixtures compartilhadas
-│   ├── test_validators.py      # Testes de validação Pydantic
-│   ├── test_utils.py           # Testes de funções utilitárias
-│   ├── test_swapi_client.py    # Testes do cliente SWAPI
-│   └── test_decorators.py      # Testes de decoradores
-├── deploy.sh                    # Script de deploy automatizado
+│   │   ├── main.py             # Endpoint GET /planets
+│   │   ├── requirements.txt
+│   │   └── [shared files]
+│   ├── starships/
+│   │   ├── main.py             # Endpoint GET /starships
+│   │   ├── requirements.txt
+│   │   └── [shared files]
+│   ├── swagger-ui/
+│   │   └── main.py             # Documentação interativa Swagger UI
+│   └── openapi-spec/
+│       ├── main.py             # Endpoint GET /openapi.yaml
+│       └── openapi.yaml        # Especificação OpenAPI servida
+├── arquitetura_tecnica/         # Diagramas de arquitetura
+│   ├── C4_L1.png               # Diagrama C4 - Contexto
+│   ├── C4_L2.png               # Diagrama C4 - Containers
+│   ├── C4_L3.png               # Diagrama C4 - Componentes
+│   ├── C4_L4.png               # Diagrama C4 - Código
+│   ├── Diagrama_Deploy.png     # Diagrama de Deploy GCP
+│   └── README.md               # Explicação sobre C4 Model
+├── deploy.sh                    # Script de deploy das 4 Cloud Functions principais
+├── deploy-swagger.sh            # Script de deploy das Cloud Functions de documentação
 ├── deploy-gateway.sh            # Script de deploy do API Gateway
-├── openapi.yaml                 # Especificação OpenAPI/Swagger 2.0
+├── openapi.yaml                 # Especificação OpenAPI/Swagger 2.0 (fonte)
+├── openapi-gateway.yaml         # Especificação para API Gateway (inclui /docs e /openapi.yaml)
 ├── requirements.txt             # Dependências de produção
-├── requirements-dev.txt         # Dependências de desenvolvimento
-├── pytest.ini                   # Configuração do pytest
 ├── .gitignore                   # Arquivos ignorados pelo git
-└── README.md                    # Este arquivo
+└── README.md                    # Esse arquivo
 ```
 
 
@@ -183,12 +238,13 @@ star_wars_api/
 
 - **Python 3.11**: Linguagem principal
 - **Flask**: Framework web (usado pelo Functions Framework)
-- **Pydantic**: Validação de dados
-- **Requests**: Cliente HTTP
-- **Pytest**: Framework de testes
+- **Pydantic**: Validação de dados e schemas
+- **Requests**: Cliente HTTP com sessões persistentes
 - **Google Cloud Functions Gen 2**: Serverless compute
-- **Google Cloud API Gateway**: Gestão de APIs
-- **SWAPI**: Fonte de dados externa
+- **Google Cloud API Gateway**: Gestão centralizada de APIs
+- **Functions Framework**: Desenvolvimento e testes locais de Cloud Functions
+- **Swagger UI**: Documentação interativa da API
+- **SWAPI**: Fonte de dados externa (The Star Wars API)
 
 ## Deploy
 
@@ -198,170 +254,132 @@ star_wars_api/
 - Projeto GCP criado com billing habilitado
 - APIs necessárias habilitadas (Cloud Functions, Cloud Build, etc.)
 
-### Deploy das Cloud Functions
+### Deploy das Cloud Functions Principais
 
-Execute o script automatizado:
+Execute o script automatizado para deploy dos 4 endpoints principais:
 
 ```bash
 ./deploy.sh
 ```
 
-Este script irá:
+Esse script irá:
 1. Validar a instalação do Google Cloud SDK
 2. Verificar autenticação e configuração do projeto
 3. Habilitar APIs necessárias (se ainda não estiverem)
 4. Copiar arquivos compartilhados para cada função
-5. Fazer deploy de todas as 4 Cloud Functions
+5. Fazer deploy das 4 Cloud Functions: films, characters, planets, starships
 6. Exibir URLs de acesso
+
+### Deploy da Documentação (Swagger UI)
+
+Executa o script de deploy das cloud functions de documentação:
+
+```bash
+./deploy-swagger.sh
+```
+
+- `swagger-ui`: Interface interativa Swagger UI (`/docs`)
+- `openapi-spec`: Endpoint que serve a especificação OpenAPI (`/openapi.yaml`)
 
 ### Deploy do API Gateway
 
-Execute o script de deploy do gateway:
+Executa o script de deploy do gateway para unificar todos os endpoints:
 
 ```bash
 ./deploy-gateway.sh
 ```
 
-## Desenvolvimento Local
+Esse script cria e configura o API Gateway que:
+- Unifica todos os 6 endpoints em uma única URL
+- Adiciona autenticação via API Key obrigatória
+- Roteia requisições para as Cloud Functions correspondentes
 
-Para executar testes locais:
+## Desenvolvimento e Testes Locais
 
-```bash
-# Instalar dependências
-pip install -r requirements.txt
+### Configurar Ambiente Virtual
 
-# Executar testes (quando implementados)
-pytest tests/
-```
-
-## Testes
-
-O projeto possui um diretório com 91 testes e 85.91% de cobertura de código, superando o requisito mínimo de 80%.
-
-### Cobertura por Módulo
-
-| Módulo | Cobertura | Descrição |
-|--------|-----------|-----------|
-| `validators.py` | 100% | Validação de parâmetros com Pydantic |
-| `decorators.py` | 86% | CORS, logging e tratamento de erros |
-| `swapi_client.py` | 83% | Cliente HTTP, cache e retry |
-| `utils.py` | 81% | Funções de enriquecimento e utilidades |
-| **Total** | **85.91%** | Cobertura geral do projeto |
-
-### Arquivos que serão testados
-
-#### 1. Validadores Pydantic (`test_validators.py`)
-- Validação de parâmetros de query (page, search, filters)
-- Enums (gender, sort_by, order)
-- Limites de valores (min/max page, string length)
-- Valores padrão e conversão de tipos
-- Validações específicas de cada endpoint
-
-#### 2. Funções Utilitárias (`test_utils.py`)
-- Enriquecimento de dados (characters, films, planets, starships, species, vehicles)
-- Filtragem case-insensitive com substring matching
-- Ordenação com suporte a tipos mistos (strings numéricas)
-- Truncamento de texto
-- Busca de detalhes de entidades relacionadas
-- Tratamento de erros e casos extremos
-
-#### 3. Cliente SWAPI (`test_swapi_client.py`)
-- Singleton pattern
-- Extração de IDs de URLs
-- Requisições HTTP com retry automático
-- Cache LRU funcionando corretamente
-- Todos os métodos de busca (films, characters, planets, starships, species, vehicles)
-- Tratamento de erros HTTP (4xx, 5xx)
-
-#### 4. Decoradores (`test_decorators.py`)
-- Adição de headers CORS
-- Tratamento de requisições OPTIONS (preflight)
-- Logging estruturado de requisições
-- Tratamento de erros (ValidationError, exceções genéricas)
-- Combinação de múltiplos decoradores
-
-### Como Executar os Testes
-
-#### 1. Configurar Ambiente Virtual
+É recomendado usar ambiente virtual Python (venv) para isolar as dependências:
 
 ```bash
 # Criar ambiente virtual
 python3 -m venv venv
 
 # Ativar ambiente virtual
-source venv/bin/activate  # Linux/Mac
+source venv/bin/activate  # Linux/Mac/WSL
 # ou
 venv\Scripts\activate     # Windows
 ```
 
-#### 2. Instalar Dependências de Desenvolvimento
+### Instalar Dependências
 
 ```bash
-pip install -r requirements-dev.txt
+# Atualizar pip
+pip install --upgrade pip
+
+# Instalar dependências do projeto
+pip install -r requirements.txt
+
+# Instalar Functions Framework para testes locais
+pip install functions-framework
 ```
 
-As dependências de teste incluem:
-- `pytest==7.4.3` - Framework de testes
-- `pytest-cov==4.1.0` - Relatórios de cobertura
-- `pytest-mock==3.12.0` - Utilitários para mocking
-- `responses==0.24.1` - Mock de requisições HTTP
+### Testar Cloud Functions Localmente
 
-#### 3. Executar Todos os Testes
+Você pode executar qualquer Cloud Function localmente usando o Functions Framework:
+
+#### Exemplo: Testar endpoint de filmes
 
 ```bash
-# Executar todos os testes com cobertura
-pytest
+# Navegar até o diretório da função
+cd functions/films
 
-# Executar com output detalhado
-pytest -v
-
-# Executar com cobertura detalhada
-pytest --cov=shared --cov-report=term-missing
-
-# Gerar relatório HTML de cobertura
-pytest --cov=shared --cov-report=html
-# O relatório será gerado em htmlcov/index.html
+# Executar localmente na porta 8080
+functions-framework --target=get_films --port=8080
 ```
 
-#### 4. Executar Testes Específicos
+Em outro terminal, fazer requisições:
 
 ```bash
-# Testar apenas validadores
-pytest tests/test_validators.py
+# Requisição simples
+curl "http://localhost:8080?page=1"
 
-# Testar apenas o cliente SWAPI
-pytest tests/test_swapi_client.py
+# Com busca
+curl "http://localhost:8080?page=1&search=Empire"
 
-# Executar um teste específico
-pytest tests/test_validators.py::TestCharacterQueryParams::test_valid_params
-
-# Executar testes que contêm uma palavra-chave
-pytest -k "cache"
+# Com enriquecimento completo
+curl "http://localhost:8080?page=1&include_all=true"
 ```
 
-#### 5. Opções Úteis do Pytest
+#### Testar outros endpoints
 
 ```bash
-# Parar no primeiro erro
-pytest -x
+# Characters na porta 8081
+cd functions/characters
+functions-framework --target=get_characters --port=8081
+curl "http://localhost:8081?page=1&search=Luke"
 
-# Modo verbose com output de print
-pytest -v -s
+# Planets na porta 8082
+cd functions/planets
+functions-framework --target=get_planets --port=8082
+curl "http://localhost:8082?page=1&search=Tatooine"
 
-# Executar apenas testes que falharam na última execução
-pytest --lf
-
-# Ver os testes mais lentos
-pytest --durations=10
+# Starships na porta 8083
+cd functions/starships
+functions-framework --target=get_starships --port=8083
+curl "http://localhost:8083?page=1&search=Falcon"
 ```
 
-### Estrutura dos Testes
+### Observações sobre Cache e Performance
 
-Os testes seguem as melhores práticas do pytest:
+As funções utilizam:
+- **Cache LRU (@lru_cache)**: Segunda requisição com mesmos parâmetros é mais rápida
+- **Retry automático**: Até 3 tentativas em caso de falhas transitórias
+- **Paginação obrigatória**: Parâmetro `page` é obrigatório em todos os endpoints
 
-- **Fixtures compartilhadas** em `conftest.py` com dados de exemplo (sample_character, sample_film, etc.)
-- **Organização por classes** para agrupar testes relacionados
-- **Nomes descritivos** que explicam o que está sendo testado
-- **Mocks apropriados** para isolar unidades de código
-- **Cobertura de casos extremos** (valores None, listas vazias, erros)
+Para verificar o cache funcionando, execute a mesma requisição duas vezes e compare o tempo:
+
+```bash
+time curl "http://localhost:8080?page=1"
+time curl "http://localhost:8080?page=1"  # Deve ser mais rápido
+```
 
